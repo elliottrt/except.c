@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <errno.h>
 
 #include "except.h"
 
@@ -64,6 +65,18 @@ static void throw_in_catch(void) {
 	}
 }
 
+static void throws_errno(void) {
+	const char *path = "/aifjdsifjsodaifjsdf.ahfsjdoifs";
+
+	try {
+		FILE *f = fopen(path, "p");
+		if (!f) throw_errno(errno);
+		else fclose(f);
+	} catch(e) {
+		printf("error: cannot open %s: %s\n", path, e->message);
+	}
+}
+
 int main(void) {
-	throw_in_catch();
+	throws_errno();
 }

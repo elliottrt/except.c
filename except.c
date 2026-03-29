@@ -114,6 +114,13 @@ _Noreturn void _except_rethrow(
 	longjmp(top->try_location, 1);
 }
 
+/* _except_errno
+	Throws an exception with code=num and message=strerror(errno).
+*/
+_Noreturn void _except_errno(int num, const char *file, unsigned line) {
+	_except_throw(num, file, line, "%s", strerror(num));
+}
+
 /* _except_push
 	Pushes an _Except buffer onto the stack and returns its jmp_buf for use
 	by the try macro.

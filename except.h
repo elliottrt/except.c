@@ -45,6 +45,12 @@ typedef struct {
 */
 #define rethrow(EXCEPT) _except_rethrow(EXCEPT, __FILE__, __LINE__)
 
+/* throw_errno(ERRNO)
+	Throws an exception with code=ERRNO and message=strerror(ERRNO).
+	Often ERRNO=errno.
+*/
+#define throw_errno(ERRNO) _except_errno(ERRNO, __FILE__, __LINE__)
+
 /* try
 	Code structure keyword starting a try {} catch(NAME) {} block.
 	Must be closed by catch(NAME).
@@ -75,9 +81,8 @@ typedef struct {
 // TODO: special return/goto within try block that cleans up the exception
 //			or maybe a special function/macro that does the cleanup
 //			all we need is to call _except_pop()
-// TODO: throw_errno() that throws an exception with code=errno, message=strerror(errno) if errno!=0
 // TODO: finally block that always executes
-// TODO: try with resources block - something like `try(FILE*, f, fopen(...); fclose) {}`
+// TODO: try with resources block - something like `try(FILE* f = fopen(...), fclose(f)) {}`
 
 /*
 	INTERNAL USE - DO NOT USE
@@ -95,6 +100,7 @@ typedef struct {
 
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
 _Noreturn void _except_rethrow(const Exception *, const char *, unsigned);
+_Noreturn void _except_errno(int, const char *, unsigned);
 jmp_buf * _except_push(void);
 Exception *_except_pop(void);
 int _except_is(int, ...);
