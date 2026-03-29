@@ -1,5 +1,5 @@
-/* exc.h
-	Cross-platform exception handling (try-catch, throw) implemented in C.
+/* except.h
+	Cross-platform exception handling (try-catch, throw) implemented in C11+.
 	Exception codes, which are passed to throw and available from the catch
 	block, are user-defined.
 
@@ -22,7 +22,7 @@
 	message -- string from throw(CODE, FMT, ...) describing the cause.
 */
 typedef struct {
-  int code, line;
+  unsigned code, line;
   const char *file;
   char message[EXC_MSG_SIZE];
 } Exception;
@@ -34,33 +34,37 @@ typedef struct {
 	FMT  -- format string of the exception message
 	...  -- arguments of the formatted exception message
 */
-#define throw(CODE, ...) _exc_throw(CODE, __FILE__, __LINE__, __VA_ARGS__)
+#define throw(CODE, ...) _except_throw(CODE, __FILE__, __LINE__, __VA_ARGS__)
 
 /* try
 	Code structure keyword starting a try {} catch(NAME) {} block.
 	Must be closed by catch(NAME).
 	Do not return from or goto out of the block.
 */
-#define try if (!setjmp(*_exc_push())) for (int _exc__flag = 0; _exc__flag++ == 0; _exc_pop())
+#define try if (!setjmp(*_except_push())) for (int _except_flag = 0; _except_flag++ == 0; _except_pop())
 
 /* catch(NAME)
 	Catch an exception thrown within the above try block.
 	Must follow a try block.
 	Within the catch block, the exception may be referenced by the given name.
 */
-#define catch(NAME) else for (const Exception *NAME = _exc_pop(); NAME; NAME = NULL)
+#define catch(NAME) else for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 
+// TODO: say 0 is a banned number and use it as the end marker of _exc_has
 // TODO: rethrow exception given pointer to it from catch
 // TODO: catch specific code (or multiple) (should just be) changing else to else if (...) in #define catch
+//		 make bool _exc_has(...) method and call with `else if (_exc_has(__VA_ARGS__, 0)) for ...`
+
+// TODO: add { at end of try and } at beginnign of catch to error if try without catch
 
 /*
 	INTERNAL USE - DO NOT USE
 */
 
-void _exc_throw(int, const char *, int, const char *, ...);
-jmp_buf * _exc_push(void);
-Exception *_exc_pop(void);
+void _except_throw(int, const char *, int, const char *, ...);
+jmp_buf * _except_push(void);
+Exception *_except_pop(void);
 
-unsigned _exc_num(void);
+unsigned _except_num(void);
 
 #endif // _EXC_H_

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <setjmp.h>
 
-#include "exc.h"
+#include "except.h"
 
 typedef struct {
 	Exception exc;
@@ -26,7 +26,7 @@ void report_uncaught(int code, const char *file, int line, const char *fmt, va_l
 	exit(code ? code : 1);
 }
 
-void _exc_throw(int code, const char *file, int line, const char *fmt, ...) {
+void _except_throw(int code, const char *file, int line, const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
 
@@ -45,17 +45,17 @@ void _exc_throw(int code, const char *file, int line, const char *fmt, ...) {
 	longjmp(top->buf, 1);
 }
 
-jmp_buf *_exc_push(void) {
+jmp_buf *_except_push(void) {
 	assert(_exc_count < EXC_STACK_SIZE);
 	return &_exc_stack[_exc_count++].buf;
 }
 
-Exception *_exc_pop(void) {
+Exception *_except_pop(void) {
 	assert(_exc_count > 0);
 	return &_exc_stack[--_exc_count].exc;
 }
 
-unsigned _exc_num(void) {
+unsigned _except_num(void) {
 	return _exc_count;
 }
 

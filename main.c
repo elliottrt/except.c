@@ -1,13 +1,13 @@
 
 #include <stdio.h>
 
-#include "exc.h"
+#include "except.h"
 
 void always_throws(void) {
 	throw(1, "always_throws");
 }
 
-#define NUM printf("exc_num() = %u\n", _exc_num())
+#define NUM printf("except_num() = %u\n", _except_num())
 
 void single_main(void) {
 	NUM;
