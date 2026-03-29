@@ -7,52 +7,51 @@ static void always_throws(void) {
 	throw(1, "always_throws");
 }
 
-#define NUM printf("except_num() = %u\n", _except_num())
-
 static void single_main(void) {
-	NUM;
 	try {
 		always_throws();
 
 		printf("no exception :(\n");
-
-		NUM;
 	} catch(e) {
 		printf("caught exception %d from %s:%u: %s\n", e->code, e->file, e->line, e->message);
-
-		NUM;
 	}
-	NUM;
 }
 
 static void double_main(void) {
-	NUM;
 	try {
 		try {
 			printf("try-try\n");
-			NUM;
 		} catch(e) {
 			printf("try-try-catch\n");
-			NUM;
 		}
 
 		printf("try\n");
-		NUM;
 	} catch(e) {
 		printf("try-catch\n");
-		NUM;
 	}
-	NUM;
 }
 
 static void uncaught_main(void) {
 	throw(69, "hello!");
 }
 
-int main(void) {
+static void catch_specific_main(void) {
 	try {
-		throw(0, "bad!");
+		throw(2, "exception!");
+	} catch_code(e, 1, 3) {
+		printf("caught a 1 or 3!\n");
+	} catch_code(e, 2) {
+		printf("caught a 2!\n");
 	} catch(e) {
-		printf("e: %s\n", e->message);
+		printf("caught something else!\n");
 	}
+}
+
+static void no_braces(void) {
+	try throw(10, "look ma, no braces!");
+	catch(e) printf("caught %d: %s at %s:%u\n", e->code, e->message, e->file, e->line);
+}
+
+int main(void) {
+	no_braces();
 }

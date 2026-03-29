@@ -17,6 +17,10 @@ typedef struct {
 _Thread_local static _Except _except_stack[EXC_STACK_SIZE] = {0};
 _Thread_local static unsigned _except_count = 0;
 
+/* report_uncaught
+	If there is no try-catch block that will handle this exception,
+	the program must exit.
+*/
 _Noreturn static void report_uncaught(
 	int code, const char *file, unsigned line, const char *fmt, va_list ap
 ) {
@@ -28,10 +32,15 @@ _Noreturn static void report_uncaught(
 	exit(code);
 }
 
+/* _except_throw
+	Throw an exception given information about it. file and line should be set
+	by the throw() macro. Aborts and prints messag if the code is 0.
+	If there is no try-catch block to handle this, reports an uncaught exception.
+*/
 _Noreturn void _except_throw(
 	int code, const char *file, unsigned line, const char *fmt, ...
 ) {
-	// make sure code isn't zero, but if debug is off then force it.
+	// make sure code isn't zero
 	if (code == 0) {
 		fprintf(stderr, "except: exception at %s:%u with zero exit code\n", file, line);
 		abort();
@@ -57,17 +66,39 @@ _Noreturn void _except_throw(
 	longjmp(top->buf, 1);
 }
 
+/* _except_push
+	Pushes an _Except buffer onto the stack and returns its jmp_buf for use
+	by the try macro.
+*/
 jmp_buf *_except_push(void) {
 	assert(_except_count < EXC_STACK_SIZE);
 	return &_except_stack[_except_count++].buf;
 }
 
+/* _except_pop
+	Removes the top exception and returns its value. This does mean that
+	exceptions thrown during a catch block will overwrite the exception.
+*/
 Exception *_except_pop(void) {
 	assert(_except_count > 0);
 	return &_except_stack[--_except_count].exc;
 }
 
-unsigned _except_num(void) {
-	return _except_count;
-}
+/* _except_is
+	Returns nonzero if the current exception is one of the argument codes.
+	Due to C va_arg requirements, the first must be a named parameter.
+*/
+int _except_is(int next, ...) {
+	va_list ap;
+	va_start(ap, next);
 
+	assert(_except_count > 0);
+	int code = _except_stack[_except_count - 1].exc.code;
+
+	do {
+		if (code == next) return 1;
+	} while ((next = va_arg(ap, int)) != 0);
+
+	va_end(ap);
+	return 0;
+}

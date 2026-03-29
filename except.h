@@ -3,8 +3,10 @@
 	Exception codes, which are passed to throw and available from the catch
 	block, are user-defined but must be nonzero.
 
-	Limitations: returning or goto'ing out of a try block prevents cleanup of
-	internal resources, so it must be avoided.
+	Limitations:
+	1. Returning or goto'ing out of a try block prevents cleanup of
+	   internal resources, so it must be avoided.
+	2. Syntax highlighters can struggle with the macro expansions.
 */
 
 #ifndef _EXC_H_
@@ -28,9 +30,9 @@ typedef struct {
   char message[EXC_MSG_SIZE];
 } Exception;
 
-/* throw(CODE, FMT, ...)
+/* throw(CODE, FMT, ARGS...)
 	Throw an exception with the given code and a message with arguments
-	formatted as with printf. Also records the file and line location.
+	formatted as though by printf. Also records the file and line location.
 	CODE -- nonzero integer code that identifies the exception
 	FMT  -- format string of the exception message
 	...  -- arguments of the formatted exception message
@@ -46,15 +48,26 @@ typedef struct {
 
 /* catch(NAME)
 	Catch an exception thrown within the above try block.
-	Must follow a try block.
-	Within the catch block, the exception may be referenced by the given name.
+	Must follow a try block or catch_code block.
+	Within the catch block, the exception may be referenced by NAME.
+	If an exception is thrown within the catch block, NAME becomes invalid.
 */
 #define catch(NAME) _except_catch(NAME)
 
-// TODO: rethrow exception given pointer to it from catch
-// TODO: catch specific code (or multiple) (should just be) changing else to else if (...) in #define catch
-//		 make bool _exc_has(...) method and call with `else if (_exc_has(__VA_ARGS__, 0)) for ...`
+/* catch_code(NAME, CODES...)
+	Catch an exception matching one of CODES thrown within the above try block.
+	Must follow a try block or catch_code block.
+	Within the catch_code block, the exception may be referenced by NAME.
+	If an exception is thrown within the catch_code block, NAME becomes invalid.
+*/
+#define catch_code(NAME, ...) _except_catch_code(NAME, __VA_ARGS__)
+
+// TODO: better name for catch_code
+// TODO: rethrow exception given pointer to it from catch or catch_code
 // TODO: is it possible to record a stacktrace?
+// TODO: special return/goto within try block that cleans up the exception
+//       or maybe a special function/macro that does the cleanup
+//       all we need is to call _except_pop()
 
 /*
 	INTERNAL USE - DO NOT USE
@@ -62,14 +75,17 @@ typedef struct {
 
 #define _except_try(X) _except_try1(X)
 #define _except_try1(L) if (!setjmp(*_except_push())) \
-	for (int _except_flag ## L = 0; _except_flag ## L++ == 0; _except_pop())
+	for (int _except_flag##L = 0; _except_flag##L++ == 0; _except_pop())
 
-#define _except_catch(NAME) else for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
+#define _except_catch(NAME) else \
+	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
+
+#define _except_catch_code(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
+	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
 jmp_buf * _except_push(void);
 Exception *_except_pop(void);
-
-unsigned _except_num(void);
+int _except_is(int, ...);
 
 #endif // _EXC_H_
