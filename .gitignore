@@ -1,0 +1,7 @@
+
+# IDE artifacts
+.cache
+compile_commands.json
+
+# compilation artifacts
+main

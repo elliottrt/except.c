@@ -1,0 +1,50 @@
+
+#include <stdio.h>
+
+#include "exc.h"
+
+void always_throws(void) {
+	throw(1, "always_throws");
+}
+
+#define NUM printf("exc_num() = %u\n", _exc_num())
+
+void single_main(void) {
+	NUM;
+	try {
+		always_throws();
+
+		printf("no exception :(\n");
+
+		NUM;
+	} catch(e) {
+		printf("caught exception %d from %s:%d: %s\n", e->code, e->file, e->line, e->message);
+
+		NUM;
+	}
+	NUM;
+}
+
+void double_main(void) {
+	NUM;
+	try {
+		try {
+			printf("try-try\n");
+			NUM;
+		} catch(e) {
+			printf("try-try-catch\n");
+			NUM;
+		}
+
+		printf("try\n");
+		NUM;
+	} catch(e) {
+		printf("try-catch\n");
+		NUM;
+	}
+	NUM;
+}
+
+int main(void) {
+	throw(69, "hello!");
+}
