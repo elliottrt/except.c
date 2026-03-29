@@ -3,13 +3,13 @@
 
 #include "except.h"
 
-void always_throws(void) {
+static void always_throws(void) {
 	throw(1, "always_throws");
 }
 
 #define NUM printf("except_num() = %u\n", _except_num())
 
-void single_main(void) {
+static void single_main(void) {
 	NUM;
 	try {
 		always_throws();
@@ -18,14 +18,14 @@ void single_main(void) {
 
 		NUM;
 	} catch(e) {
-		printf("caught exception %d from %s:%d: %s\n", e->code, e->file, e->line, e->message);
+		printf("caught exception %d from %s:%u: %s\n", e->code, e->file, e->line, e->message);
 
 		NUM;
 	}
 	NUM;
 }
 
-void double_main(void) {
+static void double_main(void) {
 	NUM;
 	try {
 		try {
@@ -45,7 +45,7 @@ void double_main(void) {
 	NUM;
 }
 
-void uncaught_main(void) {
+static void uncaught_main(void) {
 	throw(69, "hello!");
 }
 

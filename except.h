@@ -42,15 +42,14 @@ typedef struct {
 	Must be closed by catch(NAME).
 	Do not return from or goto out of the block.
 */
-// TODO: use __LINE__ for unique id?
-#define try if (!setjmp(*_except_push())) for (int _except_flag = 0; _except_flag++ == 0; _except_pop())
+#define try _except_try(__LINE__)
 
 /* catch(NAME)
 	Catch an exception thrown within the above try block.
 	Must follow a try block.
 	Within the catch block, the exception may be referenced by the given name.
 */
-#define catch(NAME) else for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
+#define catch(NAME) _except_catch(NAME)
 
 // TODO: rethrow exception given pointer to it from catch
 // TODO: catch specific code (or multiple) (should just be) changing else to else if (...) in #define catch
@@ -60,6 +59,12 @@ typedef struct {
 /*
 	INTERNAL USE - DO NOT USE
 */
+
+#define _except_try(X) _except_try1(X)
+#define _except_try1(L) if (!setjmp(*_except_push())) \
+	for (int _except_flag ## L = 0; _except_flag ## L++ == 0; _except_pop())
+
+#define _except_catch(NAME) else for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
 jmp_buf * _except_push(void);
