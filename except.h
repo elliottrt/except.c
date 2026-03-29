@@ -1,7 +1,7 @@
 /* except.h
-	Cross-platform exception handling (try-catch, throw) implemented in C11+.
+	Cross-platform exception handling (try-catch, throw) implemented in C11.
 	Exception codes, which are passed to throw and available from the catch
-	block, are user-defined but must be nonzero.
+	or catch_code block, are user-defined but must be nonzero.
 
 	Limitations:
 	1. Returning or goto'ing out of a try block prevents cleanup of
@@ -76,6 +76,8 @@ typedef struct {
 //			or maybe a special function/macro that does the cleanup
 //			all we need is to call _except_pop()
 // TODO: throw_errno() that throws an exception with code=errno, message=strerror(errno) if errno!=0
+// TODO: finally block that always executes
+// TODO: try with resources block - something like `try(FILE*, f, fopen(...); fclose) {}`
 
 /*
 	INTERNAL USE - DO NOT USE
