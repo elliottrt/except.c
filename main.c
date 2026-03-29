@@ -45,6 +45,14 @@ void double_main(void) {
 	NUM;
 }
 
-int main(void) {
+void uncaught_main(void) {
 	throw(69, "hello!");
+}
+
+int main(void) {
+	try {
+		throw(0, "bad!");
+	} catch(e) {
+		printf("e: %s\n", e->message);
+	}
 }

@@ -10,30 +10,42 @@
 typedef struct {
 	Exception exc;
 	jmp_buf buf;
-} _Exc;
+} _Except;
 
 #define EXC_STACK_SIZE (64)
 
-_Thread_local static _Exc _exc_stack[EXC_STACK_SIZE] = {0};
-_Thread_local static unsigned _exc_count = 0;
+_Thread_local static _Except _except_stack[EXC_STACK_SIZE] = {0};
+_Thread_local static unsigned _except_count = 0;
 
-void report_uncaught(int code, const char *file, int line, const char *fmt, va_list ap) {
-	fprintf(stderr, "exc: uncaught exception %d at %s:%d: ", code, file, line);
+_Noreturn static void report_uncaught(
+	int code, const char *file, unsigned line, const char *fmt, va_list ap
+) {
+	fprintf(stderr, "except: uncaught exception %d at %s:%u: ", code, file, line);
 	vfprintf(stderr, fmt, ap);
 	fputc('\n', stderr);
 	va_end(ap);
 
-	exit(code ? code : 1);
+	exit(code);
 }
 
-void _except_throw(int code, const char *file, int line, const char *fmt, ...) {
+_Noreturn void _except_throw(
+	int code, const char *file, unsigned line, const char *fmt, ...
+) {
+	// make sure code isn't zero, but if debug is off then force it.
+	if (code == 0) {
+		fprintf(stderr, "except: exception at %s:%u with zero exit code\n", file, line);
+		abort();
+	}
+
 	va_list ap;
 	va_start(ap, fmt);
 
-	if (_exc_count == 0)
+	// if there are no try-catch blocks around this,
+	// it is uncaught so we report error + exit.
+	if (_except_count == 0)
 		report_uncaught(code, file, line, fmt, ap);
 
-	_Exc *top = &_exc_stack[_exc_count - 1];
+	_Except *top = &_except_stack[_except_count - 1];
 
 	top->exc.code = code;
 	top->exc.file = file;
@@ -46,16 +58,16 @@ void _except_throw(int code, const char *file, int line, const char *fmt, ...) {
 }
 
 jmp_buf *_except_push(void) {
-	assert(_exc_count < EXC_STACK_SIZE);
-	return &_exc_stack[_exc_count++].buf;
+	assert(_except_count < EXC_STACK_SIZE);
+	return &_except_stack[_except_count++].buf;
 }
 
 Exception *_except_pop(void) {
-	assert(_exc_count > 0);
-	return &_exc_stack[--_exc_count].exc;
+	assert(_except_count > 0);
+	return &_except_stack[--_except_count].exc;
 }
 
 unsigned _except_num(void) {
-	return _exc_count;
+	return _except_count;
 }
 

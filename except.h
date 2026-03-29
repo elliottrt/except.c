@@ -1,7 +1,7 @@
 /* except.h
 	Cross-platform exception handling (try-catch, throw) implemented in C11+.
 	Exception codes, which are passed to throw and available from the catch
-	block, are user-defined.
+	block, are user-defined but must be nonzero.
 
 	Limitations: returning or goto'ing out of a try block prevents cleanup of
 	internal resources, so it must be avoided.
@@ -16,13 +16,14 @@
 
 /* type Exception
 	All information is intended to be read by the user.
-	code    --  integer code from throw(CODE, FMT, ...) to identify exception type.
+	code    -- nonzero integer code from throw to identify exception type.
 	file    -- file path where the exception was thrown.
 	line    -- line where the exception was thrown.
-	message -- string from throw(CODE, FMT, ...) describing the cause.
+	message -- string from throw describing the cause.
 */
 typedef struct {
-  unsigned code, line;
+  int code;
+  unsigned line;
   const char *file;
   char message[EXC_MSG_SIZE];
 } Exception;
@@ -30,7 +31,7 @@ typedef struct {
 /* throw(CODE, FMT, ...)
 	Throw an exception with the given code and a message with arguments
 	formatted as with printf. Also records the file and line location.
-	CODE -- integer code that identifies the exception
+	CODE -- nonzero integer code that identifies the exception
 	FMT  -- format string of the exception message
 	...  -- arguments of the formatted exception message
 */
@@ -41,6 +42,7 @@ typedef struct {
 	Must be closed by catch(NAME).
 	Do not return from or goto out of the block.
 */
+// TODO: use __LINE__ for unique id?
 #define try if (!setjmp(*_except_push())) for (int _except_flag = 0; _except_flag++ == 0; _except_pop())
 
 /* catch(NAME)
@@ -50,18 +52,16 @@ typedef struct {
 */
 #define catch(NAME) else for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 
-// TODO: say 0 is a banned number and use it as the end marker of _exc_has
 // TODO: rethrow exception given pointer to it from catch
 // TODO: catch specific code (or multiple) (should just be) changing else to else if (...) in #define catch
 //		 make bool _exc_has(...) method and call with `else if (_exc_has(__VA_ARGS__, 0)) for ...`
-
-// TODO: add { at end of try and } at beginnign of catch to error if try without catch
+// TODO: is it possible to record a stacktrace?
 
 /*
 	INTERNAL USE - DO NOT USE
 */
 
-void _except_throw(int, const char *, int, const char *, ...);
+_Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
 jmp_buf * _except_push(void);
 Exception *_except_pop(void);
 
