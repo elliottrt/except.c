@@ -52,6 +52,18 @@ static void no_braces(void) {
 	catch(e) printf("caught %d: %s at %s:%u\n", e->code, e->message, e->file, e->line);
 }
 
+static void throw_in_catch(void) {
+	try {
+		try {
+			throw(1, "should see this again");
+		} catch(e) {
+			rethrow(e);
+		}
+	} catch(e) {
+		printf("caught %d: %s from %s:%u\n", e->code, e->message, e->file, e->line);
+	}
+}
+
 int main(void) {
-	no_braces();
+	throw_in_catch();
 }

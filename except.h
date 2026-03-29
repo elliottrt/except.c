@@ -14,7 +14,7 @@
 
 #include <setjmp.h>
 
-#define EXC_MSG_SIZE (256 - 2 * sizeof(int) - sizeof(char *))
+#define EXC_MSG_SIZE (256)
 
 /* type Exception
 	All information is intended to be read by the user.
@@ -33,11 +33,17 @@ typedef struct {
 /* throw(CODE, FMT, ARGS...)
 	Throw an exception with the given code and a message with arguments
 	formatted as though by printf. Also records the file and line location.
-	CODE -- nonzero integer code that identifies the exception
-	FMT  -- format string of the exception message
-	...  -- arguments of the formatted exception message
+	CODE -- nonzero integer code that identifies the exception.
+	FMT  -- format string of the exception message.
+	...  -- arguments of the formatted exception message.
 */
 #define throw(CODE, ...) _except_throw(CODE, __FILE__, __LINE__, __VA_ARGS__)
+
+/* rethrow(EXCEPT)
+	Rethrows an exception within a catch or catch_code block.
+	EXCEPT -- pointer to an exception provided by catch or catch_code.
+*/
+#define rethrow(EXCEPT) _except_rethrow(EXCEPT, __FILE__, __LINE__)
 
 /* try
 	Code structure keyword starting a try {} catch(NAME) {} block.
@@ -62,12 +68,14 @@ typedef struct {
 */
 #define catch_code(NAME, ...) _except_catch_code(NAME, __VA_ARGS__)
 
+// TODO: namespacing for all functions by default, disableable with header flag
+// TODO: record rethrow locations to display
+// 			include rethrow_as() that changes code+message but keeps history
 // TODO: better name for catch_code
-// TODO: rethrow exception given pointer to it from catch or catch_code
-// TODO: is it possible to record a stacktrace?
 // TODO: special return/goto within try block that cleans up the exception
-//       or maybe a special function/macro that does the cleanup
-//       all we need is to call _except_pop()
+//			or maybe a special function/macro that does the cleanup
+//			all we need is to call _except_pop()
+// TODO: throw_errno() that throws an exception with code=errno, message=strerror(errno) if errno!=0
 
 /*
 	INTERNAL USE - DO NOT USE
@@ -84,6 +92,7 @@ typedef struct {
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
+_Noreturn void _except_rethrow(const Exception *, const char *, unsigned);
 jmp_buf * _except_push(void);
 Exception *_except_pop(void);
 int _except_is(int, ...);
