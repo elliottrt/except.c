@@ -17,7 +17,6 @@ typedef struct {
 
 _Thread_local static _Except _except_stack[EXC_STACK_SIZE] = {0};
 _Thread_local static unsigned _except_count = 0;
-_Thread_local int _except_ = 0;
 
 /* report_uncaught
 	Inner helper for report_uncaught taking a va_list instead of ...
@@ -50,7 +49,7 @@ _Noreturn static void report_uncaught(
 
 /* _except_throw
 	Throw an exception given information about it. file and line should be set
-	by the throw() macro. Aborts and prints messag if the code is 0.
+	by the throw() macro. Aborts and prints message if the code is 0.
 	If there is no try-catch block to handle this, reports an uncaught exception.
 */
 _Noreturn void _except_throw(
@@ -68,7 +67,7 @@ _Noreturn void _except_throw(
 	// if there are no try-catch blocks around this,
 	// it is uncaught so we report error + exit.
 	if (_except_count == 0) {
-		report_uncaught(code, file, line, fmt, ap);
+		report_uncaughtv(code, file, line, fmt, ap);
 	}
 
 	_Except *top = &_except_stack[_except_count - 1];

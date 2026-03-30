@@ -6,6 +6,8 @@ Exception codes, which are passed to throw and available from the catch or catch
 Important Notes:
 - `return`, `goto`, or `break` within a try block prevents cleanup of
 	internal resources so must be avoided.
+- `throw` or similar within a catch or catch_code block prevents
+	`finally` blocks from running.
 - Uncaught exceptions are displayed to stderr and the program exits.
 - Syntax highlighters can struggle with the macro expansions and display
 	invalid brackets when they are in fact correct.
@@ -14,7 +16,26 @@ Important Notes:
 
 Copy `except.c` and `except.h` into your project, `#include "except.h"` where needed, and compile `except.c` into your binary with the `-std=c11` flag.
 
-## Contrived Example
+### Basic Usage
+
+```c
+try {
+	// code that throws exceptions.
+	// be careful to avoid `return`, `goto`, and `break` here.
+} catch_code(e, 2, 10) {
+	// handle exception with code 2 or 10
+	// can access e->code, e->file, e->line, e->message
+	// but don't throw exceptions here if you want `finally` to run.
+} catch(e) {
+	// handle other exceptions
+	// can access e->code, e->file, e->line, e->message
+	// but don't throw exceptions here if you want `finally` to run.
+} finally {
+	// cleanup code that runs after try or any catch block finishes.
+}
+```
+
+### Contrived Examples
 
 ```c
 #include <stdio.h>
