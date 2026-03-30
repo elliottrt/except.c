@@ -126,7 +126,10 @@ _Noreturn void _except_errno(int num, const char *file, unsigned line) {
 	by the try macro.
 */
 jmp_buf *_except_push(void) {
-	assert(_except_count < EXC_STACK_SIZE);
+	if (_except_count >= EXC_STACK_SIZE) {
+		fprintf(stderr, "except: exception stack overflow\n");
+		abort();
+	}
 	return &_except_stack[_except_count++].try_location;
 }
 
@@ -135,7 +138,10 @@ jmp_buf *_except_push(void) {
 	exceptions thrown during a catch block will overwrite the exception.
 */
 Exception *_except_pop(void) {
-	assert(_except_count > 0);
+	if (_except_count == 0) {
+		fprintf(stderr, "except: exception stack underflow\n");
+		abort();
+	}
 	return &_except_stack[--_except_count].exception;
 }
 

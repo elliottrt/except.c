@@ -4,8 +4,9 @@ Cross-platform exception handling (try-catch, throw) implemented in C11.
 Exception codes, which are passed to throw and available from the catch or catch_case block, are user-defined but must be nonzero.
 
 Important Notes:
-- `return`, `goto`, or `break` within a try block prevents cleanup of
-	internal resources so must be avoided.
+- `return`, `goto` within a try block prevents cleanup of internal resources.
+	Use `try_return` or `try_goto` while in a try block instead. This is only in the immediate
+	scope of the block, functions called from a try block should use the regular keywords.
 - Uncaught exceptions are displayed to stderr and the program exits.
 - Syntax highlighters can struggle with the macro expansions and display
 	invalid brackets when they are in fact correct.
@@ -21,7 +22,7 @@ Copy `except.c` and `except.h` into your project, `#include "except.h"` where ne
 ```c
 try {
 	// code that throws exceptions.
-	// be careful to avoid `return`, `goto`, and `break` here.
+	// instead of `return` or `goto` use `try_return` and `try_goto`.
 } catch_case(e, 2, 10) {
 	// handle exception with code 2 or 10
 	// can access e->code, e->file, e->line, e->message
@@ -43,6 +44,8 @@ enum { DIVISION_BY_ZERO_EXCEPTION = 1, INVALID_OP_EXCEPTION };
 enum op { ADD, SUB, MUL, DIV };
 
 double do_op(enum op op, double lhs, double rhs) {
+	// note that `return` is fine here. It's only immediately
+	// within a `try` block that `try_return` is required.
 	switch (op) {
 	case ADD:
 		return lhs + rhs;

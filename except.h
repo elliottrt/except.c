@@ -4,12 +4,13 @@
 	or catch_case block, are user-defined but must be nonzero.
 
 	Important Notes:
-	1. `return`, `goto`, or `break` within a try block prevents cleanup of
-		internal resources so must be avoided.
+	1. `return`, `goto` within a try block prevents cleanup of internal resources.
+		Use `try_return` or `try_goto` while in a try block instead. This is only in the immediate
+		scope of the block, functions called from a try block should use the regular keywords.
 	2. Uncaught exceptions are displayed to stderr and the program exits.
 	3. Syntax highlighters can struggle with the macro expansions.
 	4. There is no `finally` block because there is currently no known way to
-		implement it in a way so it _always_ runs.
+		implement it so that it _always_ runs.
 */
 
 #ifndef _EXC_H_
@@ -77,33 +78,37 @@ typedef struct {
 */
 #define catch_case(NAME, ...) _except_catch_case(NAME, __VA_ARGS__)
 
+/* try_return(VALUE?)
+	Return a value from within a `try` block safely.
+	May be called with 0 or 1 arguments.
+	Use this instead of `return` within a `try` block.
+*/
+#define try_return(VALUE) _except_wrap(return, VALUE)
+
+/* try_goto(LABEL)
+	goto a label from within a `try` block safely.
+	Use this instead of `goto` within a `try` block.
+*/
+#define try_goto(LABEL) _except_wrap(goto, VALUE)
+
 // TODO: try_with() could work if we have some mechanism to run the cleanup code
 //			either at the end of the block with the for loop update code
 //			or with in the if(!setjmp(...)) part if setjmp returns !0
-// TODO: consider continue; statement for the try,catch,catch_case block
-//			because it forces cleanup then exits the block, could be useful
-// TODO: namespacing for all functions by default, disableable with header flag
 // TODO: record rethrow locations to display
-// TODO: rethrow_as(CODE, ...) that changes code and message
-// TODO: special return/goto/break within try block that cleans up the exception
-//			or maybe a special function/macro that does the cleanup
-//			all we need is to call _except_pop()
 // TODO: see DbgHelp.h (windows) and execinfo.h (glibc)
 
 /*
-	INTERNAL USE - DO NOT USE
+	INTERNAL - DO NOT USE
 */
 
 #define _except_try(ID) _except_try1(ID)
 #define _except_try1(ID) if (!setjmp(*_except_push())) \
 	for (int _except_##ID=1;_except_##ID--;_except_pop())
-
 #define _except_catch(NAME) else \
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
-
 #define _except_catch_case(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
-
+#define _except_wrap(K, X) do { _except_pop(); K X; } while (0)
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
 _Noreturn void _except_rethrow(const Exception *, const char *, unsigned);
 _Noreturn void _except_errno(int, const char *, unsigned);

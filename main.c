@@ -83,6 +83,8 @@ enum { DIVISION_BY_ZERO_EXCEPTION = 1, INVALID_OP_EXCEPTION };
 enum op { ADD, SUB, MUL, DIV };
 
 static double do_op(enum op op, double lhs, double rhs) {
+	// note that `return` is fine here. It's only immediately
+	// within a `try` block that `try_return` is required.
 	switch (op) {
 	case ADD:
 		return lhs + rhs;
