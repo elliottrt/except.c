@@ -84,7 +84,7 @@ _Noreturn void _except_throw(
 
 /* _except_throw
 	Throw an exception that was previously thrown by a catch or
-	catch_code block. Updates its file path and line number.
+	catch_case block. Updates its file path and line number.
 */
 _Noreturn void _except_rethrow(
 	const Exception *e, const char *file, unsigned line

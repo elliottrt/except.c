@@ -1,12 +1,12 @@
 # Except
 
 Cross-platform exception handling (try-catch, throw) implemented in C11.
-Exception codes, which are passed to throw and available from the catch or catch_code block, are user-defined but must be nonzero.
+Exception codes, which are passed to throw and available from the catch or catch_case block, are user-defined but must be nonzero.
 
 Important Notes:
 - `return`, `goto`, or `break` within a try block prevents cleanup of
 	internal resources so must be avoided.
-- `throw` or similar within a catch or catch_code block prevents
+- `throw` or similar within a catch or catch_case block prevents
 	`finally` blocks from running.
 - Uncaught exceptions are displayed to stderr and the program exits.
 - Syntax highlighters can struggle with the macro expansions and display
@@ -22,7 +22,7 @@ Copy `except.c` and `except.h` into your project, `#include "except.h"` where ne
 try {
 	// code that throws exceptions.
 	// be careful to avoid `return`, `goto`, and `break` here.
-} catch_code(e, 2, 10) {
+} catch_case(e, 2, 10) {
 	// handle exception with code 2 or 10
 	// can access e->code, e->file, e->line, e->message
 	// but don't throw exceptions here if you want `finally` to run.

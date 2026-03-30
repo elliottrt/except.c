@@ -1,12 +1,12 @@
 /* except.h
 	Cross-platform exception handling (try-catch-finally, throw) implemented in C11.
 	Exception codes, which are passed to throw and available from the catch
-	or catch_code block, are user-defined but must be nonzero.
+	or catch_case block, are user-defined but must be nonzero.
 
 	Important Notes:
 	1. `return`, `goto`, or `break` within a try block prevents cleanup of
 		internal resources so must be avoided.
-	2. `throw` or similar within a catch or catch_code block prevents
+	2. `throw` or similar within a catch or catch_case block prevents
 		`finally` blocks from running.
 	3. Uncaught exceptions are displayed to stderr and the program exits.
 	4. Syntax highlighters can struggle with the macro expansions.
@@ -43,8 +43,8 @@ typedef struct {
 #define throw(CODE, ...) _except_throw(CODE, __FILE__, __LINE__, __VA_ARGS__)
 
 /* rethrow(EXCEPT)
-	Rethrows an exception within a catch or catch_code block.
-	EXCEPT -- pointer to an exception provided by catch or catch_code.
+	Rethrows an exception within a catch or catch_case block.
+	EXCEPT -- pointer to an exception provided by catch or catch_case.
 */
 #define rethrow(EXCEPT) _except_rethrow(EXCEPT, __FILE__, __LINE__)
 
@@ -63,19 +63,19 @@ typedef struct {
 
 /* catch(NAME)
 	Catch an exception thrown within the above try block.
-	Must follow a try block or catch_code block.
+	Must follow a try block or catch_case block.
 	Within the catch block, the exception may be referenced by NAME.
 	If an exception is thrown within the catch block, NAME becomes invalid.
 */
 #define catch(NAME) _except_catch(NAME)
 
-/* catch_code(NAME, CODES...)
+/* catch_case(NAME, CODES...)
 	Catch an exception matching one of CODES thrown within the above try block.
-	Must follow a try block or catch_code block.
-	Within the catch_code block, the exception may be referenced by NAME.
-	If an exception is thrown within the catch_code block, NAME becomes invalid.
+	Must follow a try block or catch_case block.
+	Within the catch_case block, the exception may be referenced by NAME.
+	If an exception is thrown within the catch_case block, NAME becomes invalid.
 */
-#define catch_code(NAME, ...) _except_catch_code(NAME, __VA_ARGS__)
+#define catch_case(NAME, ...) _except_catch_case(NAME, __VA_ARGS__)
 
 /* finally
 	This block should be placed at the end of a try-catch group.
@@ -84,12 +84,16 @@ typedef struct {
 */
 #define finally _except_finally
 
-// TODO: consider continue; statement for the try,catch,catch_code block
+// TODO: do we really want to support `finally`? it is a trap that makes people think
+//			it will always run but that's not true.
+// TODO: try_with() could work if we have some mechanism to run the cleanup code
+//			either at the end of the block with the for loop update code
+//			or with in the if(!setjmp(...)) part if setjmp returns !0
+// TODO: consider continue; statement for the try,catch,catch_case block
 //			because it forces cleanup then exits the block, could be useful
 // TODO: namespacing for all functions by default, disableable with header flag
 // TODO: record rethrow locations to display
 // TODO: rethrow_as(CODE, ...) that changes code and message
-// TODO: better name for catch_code
 // TODO: special return/goto/break within try block that cleans up the exception
 //			or maybe a special function/macro that does the cleanup
 //			all we need is to call _except_pop()
@@ -106,7 +110,7 @@ typedef struct {
 #define _except_catch(NAME) else \
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 
-#define _except_catch_code(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
+#define _except_catch_case(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 
 #define _except_finally

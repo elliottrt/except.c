@@ -39,9 +39,9 @@ static void uncaught_main(void) {
 static void catch_specific_main(void) {
 	try {
 		throw(2, "exception!");
-	} catch_code(e, 1, 3) {
+	} catch_case(e, 1, 3) {
 		printf("caught a 1 or 3!\n");
-	} catch_code(e, 2) {
+	} catch_case(e, 2) {
 		printf("caught a 2!\n");
 	} catch(e) {
 		printf("caught something else!\n");
