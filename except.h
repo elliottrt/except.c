@@ -43,11 +43,10 @@ typedef struct {
 */
 #define throw(CODE, ...) _except_throw(CODE, __FILE__, __LINE__, __VA_ARGS__)
 
-/* rethrow(EXCEPT)
-	Rethrows an exception within a catch or catch_case block.
-	EXCEPT -- pointer to an exception provided by catch or catch_case.
+/* rethrow
+	Rethrows the exception within a catch or catch_case block.
 */
-#define rethrow(EXCEPT) _except_rethrow(EXCEPT, __FILE__, __LINE__)
+#define rethrow _except_rethrow(__FILE__, __LINE__)
 
 /* throw_errno(ERRNO)
 	Throws an exception with code=ERRNO and message=strerror(ERRNO).
@@ -94,8 +93,10 @@ typedef struct {
 // TODO: try_with() could work if we have some mechanism to run the cleanup code
 //			either at the end of the block with the for loop update code
 //			or with in the if(!setjmp(...)) part if setjmp returns !0
-// TODO: record rethrow locations to display
-// TODO: see DbgHelp.h (windows) and execinfo.h (glibc)
+//			so like if(!setjmp(...) || (<expr that does cleanup and returns 0>)) for (...)
+// TODO: record rethrow locations to display?
+// TODO: see DbgHelp.h (windows) and execinfo.h (glibc) for stacktrace
+// TODO: if we can keep jmp_buf local like Cello does it, we can remove try_return, try_goto.
 
 /*
 	INTERNAL - DO NOT USE
@@ -110,10 +111,10 @@ typedef struct {
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 #define _except_wrap(K, X) do { _except_pop(); K X; } while (0)
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
-_Noreturn void _except_rethrow(const Exception *, const char *, unsigned);
+_Noreturn void _except_rethrow(const char *, unsigned);
 _Noreturn void _except_errno(int, const char *, unsigned);
 jmp_buf *_except_push(void);
-Exception *_except_pop(void);
+const Exception *_except_pop(void);
 int _except_is(int, ...);
 
 #endif // _EXC_H_

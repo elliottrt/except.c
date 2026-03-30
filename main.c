@@ -58,7 +58,7 @@ static void throw_in_catch(void) {
 		try {
 			throw(1, "should see this again");
 		} catch(e) {
-			rethrow(e);
+			rethrow;
 		}
 	} catch(e) {
 		printf("caught %d: %s from %s:%u\n", e->code, e->message, e->file, e->line);
@@ -121,5 +121,14 @@ static void example1(void) {
 }
 
 int main(void) {
+	// always_throws();
+	// single_main();
+	// double_main();
+	// uncaught_main();
+	// catch_specific_main();
+	// no_braces();
+	// throw_in_catch();
+	// throws_errno();
 	example1();
+
 }

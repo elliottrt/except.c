@@ -8,14 +8,10 @@
 
 #include "except.h"
 
-typedef struct {
-	Exception exception;
-	jmp_buf try_location;
-} _Except;
-
 #define EXC_STACK_SIZE (64)
 
-_Thread_local static _Except _except_stack[EXC_STACK_SIZE] = {0};
+_Thread_local static jmp_buf _except_stack[EXC_STACK_SIZE] = {0};
+_Thread_local static Exception _exception;
 _Thread_local static unsigned _except_count = 0;
 
 /* report_uncaught
@@ -70,48 +66,32 @@ _Noreturn void _except_throw(
 		report_uncaughtv(code, file, line, fmt, ap);
 	}
 
-	_Except *top = &_except_stack[_except_count - 1];
+	_exception.code = code;
+	_exception.file = file;
+	_exception.line = line;
 
-	top->exception.code = code;
-	top->exception.file = file;
-	top->exception.line = line;
-
-	vsnprintf(top->exception.message, EXC_MSG_SIZE - 1, fmt, ap);
+	vsnprintf(_exception.message, EXC_MSG_SIZE - 1, fmt, ap);
 	va_end(ap);
 
-	longjmp(top->try_location, 1);
+	longjmp(_except_stack[_except_count - 1], 1);
 }
 
 /* _except_throw
 	Throw an exception that was previously thrown by a catch or
 	catch_case block. Updates its file path and line number.
 */
-_Noreturn void _except_rethrow(
-	const Exception *e, const char *file, unsigned line
-) {
-	// make sure that it was the last thrown exception.
-	// this also accounts for a null pointer.
-	if (e != &_except_stack[_except_count].exception) {
-		fprintf(stderr, "except: invalid rethrow exception at %s:%u\n", file, line);
-		abort();
-	}
-
+_Noreturn void _except_rethrow(const char *file, unsigned line) {
 	// if there are no try-catch blocks around this,
 	// it is uncaught so we report error + exit.
 	if (_except_count == 0) {
-		report_uncaught(e->code, file, line, "%s", e->message);
+		report_uncaught(_exception.code, file, line, "%s", _exception.message);
 	}
 
-	// copy its data into the empty exception currently at the stack top
-	_Except *top = &_except_stack[_except_count - 1];
-
-	// copy the rethrown exception into the current empty buffer
-	memcpy(&top->exception, e, sizeof(top->exception));
 	// change line and file
-	top->exception.file = file;
-	top->exception.line = line;
+	_exception.file = file;
+	_exception.line = line;
 
-	longjmp(top->try_location, 1);
+	longjmp(_except_stack[_except_count - 1], 1);
 }
 
 /* _except_errno
@@ -130,19 +110,20 @@ jmp_buf *_except_push(void) {
 		fprintf(stderr, "except: exception stack overflow\n");
 		abort();
 	}
-	return &_except_stack[_except_count++].try_location;
+	return &_except_stack[_except_count++];
 }
 
 /* _except_pop
-	Removes the top exception and returns its value. This does mean that
-	exceptions thrown during a catch block will overwrite the exception.
+	Pops the exception destination from the stack from the parent try
+	and return a pointer to the exception.
 */
-Exception *_except_pop(void) {
+const Exception *_except_pop(void) {
 	if (_except_count == 0) {
 		fprintf(stderr, "except: exception stack underflow\n");
 		abort();
 	}
-	return &_except_stack[--_except_count].exception;
+	_except_count -= 1;
+	return &_exception;
 }
 
 /* _except_is
@@ -154,10 +135,9 @@ int _except_is(int next, ...) {
 	va_start(ap, next);
 
 	assert(_except_count > 0);
-	int code = _except_stack[_except_count - 1].exception.code;
 
 	do {
-		if (code == next) return 1;
+		if (_exception.code == next) return 1;
 	} while ((next = va_arg(ap, int)) != 0);
 
 	va_end(ap);
