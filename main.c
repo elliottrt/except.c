@@ -25,7 +25,6 @@ static void double_main(void) {
 		} catch(e) {
 			printf("try-try-catch\n");
 		}
-
 		printf("try\n");
 	} catch(e) {
 		printf("try-catch\n");
@@ -77,6 +76,47 @@ static void throws_errno(void) {
 	}
 }
 
+/* note that exception values must be nonzero but can be negative */
+enum { DIVISION_BY_ZERO_EXCEPTION = 1, INVALID_OP_EXCEPTION };
+
+enum op { ADD, SUB, MUL, DIV };
+
+static double do_op(enum op op, double lhs, double rhs) {
+	switch (op) {
+	case ADD:
+		return lhs + rhs;
+	case SUB:
+		return lhs - rhs;
+	case MUL:
+		return lhs * rhs;
+	case DIV:
+		if (rhs == 0.0)
+			throw(DIVISION_BY_ZERO_EXCEPTION, "division by zero");
+		return lhs / rhs;
+	default:
+		throw(INVALID_OP_EXCEPTION, "invalid operation %d", op);
+	}
+}
+
+static void print_op(enum op op, double lhs, double rhs) {
+	try {
+		double value = do_op(op, lhs, rhs);
+		printf("%f <%d> %f = %f\n", lhs, op, rhs, value);
+	} catch (e) {
+		printf(
+			"error occurred during %f <%d> %f: %s\n",
+			lhs, op, rhs, e->message
+		);
+	}
+}
+
+static void example1(void) {
+	print_op(ADD, 1, 2);
+	print_op(MUL, 10, 10);
+	print_op(DIV, 1, 0);
+	print_op(100, 5, 6);
+}
+
 int main(void) {
-	throws_errno();
+	example1();
 }

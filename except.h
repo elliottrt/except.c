@@ -1,12 +1,13 @@
 /* except.h
-	Cross-platform exception handling (try-catch, throw) implemented in C11.
+	Cross-platform exception handling (try-catch-finally, throw) implemented in C11.
 	Exception codes, which are passed to throw and available from the catch
 	or catch_code block, are user-defined but must be nonzero.
 
-	Limitations:
-	1. Returning or goto'ing out of a try block prevents cleanup of
-	   internal resources, so it must be avoided.
-	2. Syntax highlighters can struggle with the macro expansions.
+	Important Notes:
+	1. `return`, `goto`, or `break` within a try block prevents cleanup of
+		internal resources so must be avoided.
+	2. Uncaught exceptions are displayed to stderr and the program exits.
+	3. Syntax highlighters can struggle with the macro expansions.
 */
 
 #ifndef _EXC_H_
@@ -56,7 +57,7 @@ typedef struct {
 	Must be closed by catch(NAME).
 	Do not return from or goto out of the block.
 */
-#define try _except_try(__LINE__)
+#define try _except_try
 
 /* catch(NAME)
 	Catch an exception thrown within the above try block.
@@ -74,37 +75,45 @@ typedef struct {
 */
 #define catch_code(NAME, ...) _except_catch_code(NAME, __VA_ARGS__)
 
+/* finally
+	This block should be placed at the end of a try-catch group.
+	The code in it will run as long as control flow reaches the block,
+	that is there is no `return`, `goto`, or `break` out of a try,
+	catch, or catch_code block.
+	If there are multiple finally blocks, each will run.
+*/
+#define finally if (!_except_||(_except_=0))
+
 // TODO: consider continue; statement for the try,catch,catch_code block
 //			because it forces cleanup then exits the block, could be useful
 // TODO: namespacing for all functions by default, disableable with header flag
 // TODO: record rethrow locations to display
 // TODO: rethrow_as(CODE, ...) that changes code and message
 // TODO: better name for catch_code
-// TODO: special return/goto within try block that cleans up the exception
+// TODO: special return/goto/break within try block that cleans up the exception
 //			or maybe a special function/macro that does the cleanup
 //			all we need is to call _except_pop()
-// TODO: finally block that always executes - this seems to require a global variable.
 // TODO: see DbgHelp.h (windows) and execinfo.h (glibc)
 
 /*
 	INTERNAL USE - DO NOT USE
 */
 
-#define _except_try(X) _except_try1(X)
-#define _except_try1(L) if (!setjmp(*_except_push())) \
-	for (int _except_flag##L = 0; _except_flag##L++ == 0; _except_pop())
+#define _except_try if (!setjmp(*_except_push())) \
+	for (;++_except_;_except_=-1,_except_pop())
 
 #define _except_catch(NAME) else \
-	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
+	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL, _except_=0)
 
 #define _except_catch_code(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
-	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
+	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL, _except_=0)
 
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
 _Noreturn void _except_rethrow(const Exception *, const char *, unsigned);
 _Noreturn void _except_errno(int, const char *, unsigned);
-jmp_buf * _except_push(void);
+jmp_buf *_except_push(void);
 Exception *_except_pop(void);
 int _except_is(int, ...);
+extern _Thread_local int _except_;
 
 #endif // _EXC_H_

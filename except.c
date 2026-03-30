@@ -17,6 +17,7 @@ typedef struct {
 
 _Thread_local static _Except _except_stack[EXC_STACK_SIZE] = {0};
 _Thread_local static unsigned _except_count = 0;
+_Thread_local int _except_ = 0;
 
 /* report_uncaught
 	Inner helper for report_uncaught taking a va_list instead of ...
