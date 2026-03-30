@@ -74,15 +74,17 @@ typedef struct {
 */
 #define catch_code(NAME, ...) _except_catch_code(NAME, __VA_ARGS__)
 
+// TODO: consider continue; statement for the try,catch,catch_code block
+//			because it forces cleanup then exits the block, could be useful
 // TODO: namespacing for all functions by default, disableable with header flag
 // TODO: record rethrow locations to display
-// 			include rethrow_as() that changes code+message but keeps history
+// TODO: rethrow_as(CODE, ...) that changes code and message
 // TODO: better name for catch_code
 // TODO: special return/goto within try block that cleans up the exception
 //			or maybe a special function/macro that does the cleanup
 //			all we need is to call _except_pop()
-// TODO: finally block that always executes
-// TODO: try with resources block - something like `try(FILE* f = fopen(...), fclose(f)) {}`
+// TODO: finally block that always executes - this seems to require a global variable.
+// TODO: see DbgHelp.h (windows) and execinfo.h (glibc)
 
 /*
 	INTERNAL USE - DO NOT USE

@@ -3,10 +3,12 @@
 Cross-platform exception handling (try-catch, throw) implemented in C11.
 Exception codes, which are passed to throw and available from the catch or catch_code block, are user-defined but must be nonzero.
 
-Limitations:
-- Returning or goto'ing out of a try block prevents cleanup of
-	internal resources, so it must be avoided.
-- Syntax highlighters can struggle with the macro expansions.
+Important Notes:
+- `return`, `goto`, or `break` within a try block prevents cleanup of
+	internal resources so must be avoided.
+- Uncaught exceptions are displayed to stderr and the program exits.
+- Syntax highlighters can struggle with the macro expansions and display
+	invalid brackets when they are in fact correct.
 
 ## Getting Started
 
