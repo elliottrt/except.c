@@ -1,15 +1,15 @@
 /* except.h
-	Cross-platform exception handling (try-catch-finally, throw) implemented in C11.
+	Cross-platform exception handling (try-catch, throw) implemented in C11.
 	Exception codes, which are passed to throw and available from the catch
 	or catch_case block, are user-defined but must be nonzero.
 
 	Important Notes:
 	1. `return`, `goto`, or `break` within a try block prevents cleanup of
 		internal resources so must be avoided.
-	2. `throw` or similar within a catch or catch_case block prevents
-		`finally` blocks from running.
-	3. Uncaught exceptions are displayed to stderr and the program exits.
-	4. Syntax highlighters can struggle with the macro expansions.
+	2. Uncaught exceptions are displayed to stderr and the program exits.
+	3. Syntax highlighters can struggle with the macro expansions.
+	4. There is no `finally` block because there is currently no known way to
+		implement it in a way so it _always_ runs.
 */
 
 #ifndef _EXC_H_
@@ -77,15 +77,6 @@ typedef struct {
 */
 #define catch_case(NAME, ...) _except_catch_case(NAME, __VA_ARGS__)
 
-/* finally
-	This block should be placed at the end of a try-catch group.
-	The code in it will run as long as control flow reaches the block.
-	If there are multiple finally blocks, each will run.
-*/
-#define finally _except_finally
-
-// TODO: do we really want to support `finally`? it is a trap that makes people think
-//			it will always run but that's not true.
 // TODO: try_with() could work if we have some mechanism to run the cleanup code
 //			either at the end of the block with the for loop update code
 //			or with in the if(!setjmp(...)) part if setjmp returns !0
@@ -112,8 +103,6 @@ typedef struct {
 
 #define _except_catch_case(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
-
-#define _except_finally
 
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
 _Noreturn void _except_rethrow(const Exception *, const char *, unsigned);

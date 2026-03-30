@@ -118,38 +118,6 @@ static void example1(void) {
 	print_op(100, 5, 6);
 }
 
-// reads the first 4 bytes of a file or fails with an exception.
-// TODO: currently this requires we save the exception to throw in the finally block.
-//			i really don't like that. ideally we should be able to throw in the catch block
-//			and have the finally block still execute, but I'm not sure how to do that.
-// note that the alternative would be to not have a finally block at all, and instead
-// repeat the cleanup code at the end of the try and in the catch block.
-static uint32_t read_magic(const char *path) {
-	FILE *f;
-	uint32_t magic;
-	const Exception *except;
-
-	try {
-		f = fopen(path, "r");
-		if (!f) throw_errno(errno);
-
-		size_t read = fread(&magic, sizeof(magic), 1, f);
-		if (read != 1) throw_errno(errno);
-	} catch(e) {
-		except = e;
-	} finally {
-		if (f != NULL) fclose(f);
-
-		if (except) {
-			throw(except->code, "unable to read magic of %s: %s", path, except->message);
-			//rethrow_as(except->code, "unable to read magic of %s: %s", path, except->message);
-		}
-
-		return magic;
-	}
-}
-
 int main(void) {
 	example1();
-	// printf("magic = 0x%08x\n", read_magic("./a.out"));
 }
