@@ -7,7 +7,8 @@ Important Notes:
 - `return`, `goto` within a try block prevents cleanup of internal resources.
 	Use `try_return` or `try_goto` while in a try block instead. This is only in the immediate
 	scope of the block, functions called from a try block should use the regular keywords.
-- Uncaught exceptions are displayed to stderr and the program exits.
+- Uncaught exceptions call the current exception handler (set with `except_handler`)
+	if it isn't NULL then exits with EXIT_FAILURE.
 - Syntax highlighters can struggle with the macro expansions and display
 	invalid brackets when they are in fact correct.
 - There is no `finally` block because there is currently no known way to
@@ -25,10 +26,10 @@ try {
 	// instead of `return` or `goto` use `try_return` and `try_goto`.
 } catch_case(e, 2, 10) {
 	// handle exception with code 2 or 10
-	// can access e->code, e->file, e->line, e->message
+	// can access e->code, e->file, e->line, e->func, e->message
 } catch(e) {
 	// handle other exceptions
-	// can access e->code, e->file, e->line, e->message
+	// can access e->code, e->file, e->line, e->func, e->message
 }
 ```
 

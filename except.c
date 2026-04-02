@@ -13,36 +13,16 @@
 _Thread_local static jmp_buf _except_stack[EXC_STACK_SIZE] = {0};
 _Thread_local static Exception _exception;
 _Thread_local static unsigned _except_count = 0;
+_Thread_local static void (*_except_handler)(const Exception *) = NULL;
 
-/* report_uncaught
-	Inner helper for report_uncaught taking a va_list instead of ...
-	Note: calls va_end() on ap.
+/* handle_uncaught
+	Handle an uncaught exception, using _exception and _except_handler.
 */
-_Noreturn static void report_uncaughtv(
-	int code, const char *file, unsigned line, const char *func, const char *fmt, va_list ap
-) {
-	(void) func; // unused currently
-
-	fprintf(stderr, "except: uncaught exception at %s:%u: ", file, line);
-	vfprintf(stderr, fmt, ap);
-	fputc('\n', stderr);
-	va_end(ap);
-
-	exit(code);
-}
-
-/* report_uncaught
-	If there is no try-catch block that will handle this exception,
-	the program must exit.
-*/
-_Noreturn static void report_uncaught(
-	int code, const char *file, unsigned line, const char *func, const char *fmt, ...
-) {
-	va_list ap;
-	va_start(ap, fmt);
-	report_uncaughtv(code, file, line, func, fmt, ap);
-
-	exit(code);
+_Noreturn static void handle_uncaught(void) {
+	if (_except_handler) {
+		_except_handler(&_exception);
+	}
+	exit(EXIT_FAILURE);
 }
 
 /* _except_throw
@@ -62,12 +42,6 @@ _Noreturn void _except_throw(
 	va_list ap;
 	va_start(ap, fmt);
 
-	// if there are no try-catch blocks around this,
-	// it is uncaught so we report error + exit.
-	if (_except_count == 0) {
-		report_uncaughtv(code, file, line, func, fmt, ap);
-	}
-
 	_exception.code = code;
 	_exception.file = file;
 	_exception.line = line;
@@ -75,6 +49,12 @@ _Noreturn void _except_throw(
 
 	vsnprintf(_exception.message, EXC_MSG_SIZE - 1, fmt, ap);
 	va_end(ap);
+
+	// if there are no try-catch blocks around this,
+	// it is uncaught so we report error + exit.
+	if (_except_count == 0) {
+		handle_uncaught();
+	}
 
 	longjmp(_except_stack[_except_count - 1], 1);
 }
@@ -84,16 +64,16 @@ _Noreturn void _except_throw(
 	catch_case block. Updates its file path and line number.
 */
 _Noreturn void _except_rethrow(const char *file, unsigned line, const char *func) {
-	// if there are no try-catch blocks around this,
-	// it is uncaught so we report error + exit.
-	if (_except_count == 0) {
-		report_uncaught(_exception.code, file, line, "%s", _exception.message);
-	}
-
 	// change throw location information only
 	_exception.file = file;
 	_exception.line = line;
 	_exception.func = func;
+
+	// if there are no try-catch blocks around this,
+	// it is uncaught so we report error + exit.
+	if (_except_count == 0) {
+		handle_uncaught();
+	}
 
 	longjmp(_except_stack[_except_count - 1], 1);
 }
@@ -149,4 +129,9 @@ int _except_is(int next, ...) {
 
 	va_end(ap);
 	return 0;
+}
+
+/* See except.h */
+void except_handler(void (*handler)(const Exception *)) {
+	_except_handler = handler;
 }

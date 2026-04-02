@@ -39,6 +39,7 @@ typedef struct {
 /* throw(CODE, FMT, ARGS...)
 	Throw an exception with the given code and a message with arguments
 	formatted as though by printf. Also records the file and line location.
+	If there is no try block that catches it, calls the exception handler.
 	CODE -- nonzero integer code that identifies the exception.
 	FMT  -- format string of the exception message.
 	...  -- arguments of the formatted exception message.
@@ -92,16 +93,20 @@ typedef struct {
 */
 #define try_goto(LABEL) _except_wrap(goto, VALUE)
 
+/* except_handler(handler)
+	Sets the uncaught exception handler, which is called when an exception
+	has no try-catch block to go to. If the handler does not exit the program
+	itself or is NULL, exit(EXIT_FAILURE) will be called.
+*/
+void except_handler(void (*handler)(const Exception *));
+
 // TODO: try_with() could work if we have some mechanism to run the cleanup code
 //			either at the end of the block with the for loop update code
 //			or with in the if(!setjmp(...)) part if setjmp returns !0
 //			so like if(!setjmp(...) || (<expr that does cleanup and returns 0>)) for (...)
 // TODO: record rethrow locations to display?
 // TODO: see DbgHelp.h (windows) and execinfo.h (glibc) for stacktrace
-// TODO: should we have customizable behaviour on uncaught exception? maybe stuff like
-//			exit(code) vs abort()
-//			what message to display
-//		maybe just have a callback?
+// TODO: what if the user doesn't want location info like file/line/func due to security reasons?
 
 /*
 	INTERNAL - DO NOT USE
