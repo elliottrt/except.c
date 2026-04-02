@@ -13,6 +13,8 @@ Important Notes:
 	invalid brackets when they are in fact correct.
 - There is no `finally` block because there is currently no known way to
 	implement it in a way so it _always_ runs.
+- Locations of errors are enabled by default and can be disabled by
+	defining `EXCEPT_NO_LOCATION`.
 
 ## Getting Started
 

@@ -62,7 +62,7 @@ static void throw_in_catch(void) {
 			rethrow;
 		}
 	} catch(e) {
-		printf("caught %d: %s from %s:%u\n", e->code, e->message, e->file, e->line);
+		printf("caught %d: %s from %s:%u in %s\n", e->code, e->message, e->file, e->line, e->func);
 	}
 }
 
@@ -128,7 +128,7 @@ int main(void) {
 	// uncaught_main();
 	// catch_specific_main();
 	// no_braces();
-	// throw_in_catch();
+	throw_in_catch();
 	// throws_errno();
-	example1();
+	// example1();
 }

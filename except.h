@@ -11,10 +11,12 @@
 	3. Syntax highlighters can struggle with the macro expansions.
 	4. There is no `finally` block because there is currently no known way to
 		implement it so that it _always_ runs.
+	5. Locations of errors are enabled by default and can be disabled by
+		defining `EXCEPT_NO_LOCATION`.
 */
 
-#ifndef _EXC_H_
-#define _EXC_H_
+#ifndef _EXCEPT_H_
+#define _EXCEPT_H_
 
 #include <setjmp.h>
 
@@ -29,11 +31,11 @@
 	message -- string from throw describing the cause.
 */
 typedef struct {
-  int code;
-  unsigned line;
-  const char *file;
-  const char *func;
-  char message[EXC_MSG_SIZE];
+	int code;
+	unsigned line;
+	const char *file;
+	const char *func;
+	char message[EXC_MSG_SIZE];
 } Exception;
 
 /* throw(CODE, FMT, ARGS...)
@@ -44,18 +46,18 @@ typedef struct {
 	FMT  -- format string of the exception message.
 	...  -- arguments of the formatted exception message.
 */
-#define throw(CODE, ...) _except_throw(CODE, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define throw(CODE, ...) _except_throw(CODE, _except_location, __VA_ARGS__)
 
 /* rethrow
 	Rethrows the exception within a catch or catch_case block.
 */
-#define rethrow _except_rethrow(__FILE__, __LINE__, __func__)
+#define rethrow _except_rethrow(_except_location)
 
 /* throw_errno(ERRNO)
 	Throws an exception with code=ERRNO and message=strerror(ERRNO).
 	Often this will have ERRNO=errno.
 */
-#define throw_errno(ERRNO) _except_errno(ERRNO, __FILE__, __LINE__, __func__)
+#define throw_errno(ERRNO) _except_errno(ERRNO, _except_location)
 
 /* try
 	Code structure keyword starting a try {} catch(NAME) {} block.
@@ -106,11 +108,16 @@ void except_handler(void (*handler)(const Exception *));
 //			so like if(!setjmp(...) || (<expr that does cleanup and returns 0>)) for (...)
 // TODO: record rethrow locations to display?
 // TODO: see DbgHelp.h (windows) and execinfo.h (glibc) for stacktrace
-// TODO: what if the user doesn't want location info like file/line/func due to security reasons?
 
 /*
 	INTERNAL - DO NOT USE
 */
+
+#ifdef EXCEPT_NO_LOCATION
+	#define _except_location "<none>", 0, "<none>"
+#else
+	#define _except_location __FILE__, __LINE__, __func__
+#endif
 
 #define _except_try(ID) _except_try1(ID)
 #define _except_try1(ID) if (!setjmp(*_except_push())) \
@@ -127,4 +134,4 @@ jmp_buf *_except_push(void);
 const Exception *_except_pop(void);
 int _except_is(int, ...);
 
-#endif // _EXC_H_
+#endif // _EXCEPT_H_
