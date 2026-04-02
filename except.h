@@ -25,12 +25,14 @@
 	code    -- nonzero integer code from throw to identify exception type.
 	file    -- file path where the exception was thrown.
 	line    -- line where the exception was thrown.
+	func    -- function where the exception was thrown.
 	message -- string from throw describing the cause.
 */
 typedef struct {
   int code;
   unsigned line;
   const char *file;
+  const char *func;
   char message[EXC_MSG_SIZE];
 } Exception;
 
@@ -41,18 +43,18 @@ typedef struct {
 	FMT  -- format string of the exception message.
 	...  -- arguments of the formatted exception message.
 */
-#define throw(CODE, ...) _except_throw(CODE, __FILE__, __LINE__, __VA_ARGS__)
+#define throw(CODE, ...) _except_throw(CODE, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /* rethrow
 	Rethrows the exception within a catch or catch_case block.
 */
-#define rethrow _except_rethrow(__FILE__, __LINE__)
+#define rethrow _except_rethrow(__FILE__, __LINE__, __func__)
 
 /* throw_errno(ERRNO)
 	Throws an exception with code=ERRNO and message=strerror(ERRNO).
-	Often ERRNO=errno.
+	Often this will have ERRNO=errno.
 */
-#define throw_errno(ERRNO) _except_errno(ERRNO, __FILE__, __LINE__)
+#define throw_errno(ERRNO) _except_errno(ERRNO, __FILE__, __LINE__, __func__)
 
 /* try
 	Code structure keyword starting a try {} catch(NAME) {} block.
@@ -96,7 +98,10 @@ typedef struct {
 //			so like if(!setjmp(...) || (<expr that does cleanup and returns 0>)) for (...)
 // TODO: record rethrow locations to display?
 // TODO: see DbgHelp.h (windows) and execinfo.h (glibc) for stacktrace
-// TODO: if we can keep jmp_buf local like Cello does it, we can remove try_return, try_goto.
+// TODO: should we have customizable behaviour on uncaught exception? maybe stuff like
+//			exit(code) vs abort()
+//			what message to display
+//		maybe just have a callback?
 
 /*
 	INTERNAL - DO NOT USE
@@ -110,9 +115,9 @@ typedef struct {
 #define _except_catch_case(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
 	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
 #define _except_wrap(K, X) do { _except_pop(); K X; } while (0)
-_Noreturn void _except_throw(int, const char *, unsigned, const char *, ...);
-_Noreturn void _except_rethrow(const char *, unsigned);
-_Noreturn void _except_errno(int, const char *, unsigned);
+_Noreturn void _except_throw(int, const char *, unsigned, const char *, const char *, ...);
+_Noreturn void _except_rethrow(const char *, unsigned, const char *);
+_Noreturn void _except_errno(int, const char *, unsigned, const char *);
 jmp_buf *_except_push(void);
 const Exception *_except_pop(void);
 int _except_is(int, ...);

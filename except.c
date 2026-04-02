@@ -19,9 +19,11 @@ _Thread_local static unsigned _except_count = 0;
 	Note: calls va_end() on ap.
 */
 _Noreturn static void report_uncaughtv(
-	int code, const char *file, unsigned line, const char *fmt, va_list ap
+	int code, const char *file, unsigned line, const char *func, const char *fmt, va_list ap
 ) {
-	fprintf(stderr, "except: uncaught exception %d at %s:%u: ", code, file, line);
+	(void) func; // unused currently
+
+	fprintf(stderr, "except: uncaught exception at %s:%u: ", file, line);
 	vfprintf(stderr, fmt, ap);
 	fputc('\n', stderr);
 	va_end(ap);
@@ -34,11 +36,11 @@ _Noreturn static void report_uncaughtv(
 	the program must exit.
 */
 _Noreturn static void report_uncaught(
-	int code, const char *file, unsigned line, const char *fmt, ...
+	int code, const char *file, unsigned line, const char *func, const char *fmt, ...
 ) {
 	va_list ap;
 	va_start(ap, fmt);
-	report_uncaughtv(code, file, line, fmt, ap);
+	report_uncaughtv(code, file, line, func, fmt, ap);
 
 	exit(code);
 }
@@ -49,7 +51,7 @@ _Noreturn static void report_uncaught(
 	If there is no try-catch block to handle this, reports an uncaught exception.
 */
 _Noreturn void _except_throw(
-	int code, const char *file, unsigned line, const char *fmt, ...
+	int code, const char *file, unsigned line, const char *func, const char *fmt, ...
 ) {
 	// make sure code isn't zero
 	if (code == 0) {
@@ -63,12 +65,13 @@ _Noreturn void _except_throw(
 	// if there are no try-catch blocks around this,
 	// it is uncaught so we report error + exit.
 	if (_except_count == 0) {
-		report_uncaughtv(code, file, line, fmt, ap);
+		report_uncaughtv(code, file, line, func, fmt, ap);
 	}
 
 	_exception.code = code;
 	_exception.file = file;
 	_exception.line = line;
+	_exception.func = func;
 
 	vsnprintf(_exception.message, EXC_MSG_SIZE - 1, fmt, ap);
 	va_end(ap);
@@ -80,25 +83,26 @@ _Noreturn void _except_throw(
 	Throw an exception that was previously thrown by a catch or
 	catch_case block. Updates its file path and line number.
 */
-_Noreturn void _except_rethrow(const char *file, unsigned line) {
+_Noreturn void _except_rethrow(const char *file, unsigned line, const char *func) {
 	// if there are no try-catch blocks around this,
 	// it is uncaught so we report error + exit.
 	if (_except_count == 0) {
 		report_uncaught(_exception.code, file, line, "%s", _exception.message);
 	}
 
-	// change line and file
+	// change throw location information only
 	_exception.file = file;
 	_exception.line = line;
+	_exception.func = func;
 
 	longjmp(_except_stack[_except_count - 1], 1);
 }
 
 /* _except_errno
-	Throws an exception with code=num and message=strerror(errno).
+	Throws an exception with code=num and message=strerror(num).
 */
-_Noreturn void _except_errno(int num, const char *file, unsigned line) {
-	_except_throw(num, file, line, "%s", strerror(num));
+_Noreturn void _except_errno(int num, const char *file, unsigned line, const char *func) {
+	_except_throw(num, file, line, func, "%s", strerror(num));
 }
 
 /* _except_push
@@ -131,10 +135,13 @@ const Exception *_except_pop(void) {
 	Due to C va_arg requirements, the first must be a named parameter.
 */
 int _except_is(int next, ...) {
+	if (_except_count == 0) {
+		fprintf(stderr, "except: exception stack underflow\n");
+		abort();
+	}
+
 	va_list ap;
 	va_start(ap, next);
-
-	assert(_except_count > 0);
 
 	do {
 		if (_exception.code == next) return 1;

@@ -124,11 +124,10 @@ int main(void) {
 	// always_throws();
 	// single_main();
 	// double_main();
-	// uncaught_main();
+	uncaught_main();
 	// catch_specific_main();
 	// no_braces();
 	// throw_in_catch();
 	// throws_errno();
-	example1();
-
+	// example1();
 }
