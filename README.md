@@ -15,6 +15,8 @@ Important Notes:
 	implement it in a way so it _always_ runs.
 - Locations of errors are enabled by default and can be disabled by
 	defining `EXCEPT_NO_LOCATION`.
+- `try` (with or without `catch_case`) not followed by `catch` will ignore
+	errors that are not caught. This is usually dangerous and should be avoided.
 
 ## Getting Started
 

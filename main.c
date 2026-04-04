@@ -121,6 +121,19 @@ static void example1(void) {
 	print_op(100, 5, 6);
 }
 
+static void try_no_catch(void) {
+	try throw(1, "Hello!");
+}
+
+static void assign_fallback(void) {
+	double foo;
+
+	try foo = do_op(DIV, 1, 0);
+	catch(_) foo = 0xfa1L;
+
+	printf("foo = %f\n", foo);
+}
+
 int main(void) {
 	// always_throws();
 	// single_main();
@@ -128,7 +141,9 @@ int main(void) {
 	// uncaught_main();
 	// catch_specific_main();
 	// no_braces();
-	throw_in_catch();
+	// throw_in_catch();
 	// throws_errno();
-	// example1();
+	example1();
+	// try_no_catch();
+	// assign_fallback();
 }

@@ -101,13 +101,12 @@ jmp_buf *_except_push(void) {
 	Pops the exception destination from the stack from the parent try
 	and return a pointer to the exception.
 */
-const Exception *_except_pop(void) {
+void _except_pop(void) {
 	if (_except_count == 0) {
 		fprintf(stderr, "except: exception stack underflow\n");
 		abort();
 	}
 	_except_count -= 1;
-	return &_exception;
 }
 
 /* _except_is
@@ -129,6 +128,13 @@ int _except_is(int next, ...) {
 
 	va_end(ap);
 	return 0;
+}
+
+/* _except_get
+	Return a pointer to the exception object.
+*/
+const Exception *_except_get(void) {
+	return &_exception;
 }
 
 /* See except.h */

@@ -13,6 +13,8 @@
 		implement it so that it _always_ runs.
 	5. Locations of errors are enabled by default and can be disabled by
 		defining `EXCEPT_NO_LOCATION`.
+	6. `try` (with or without `catch_case`) not followed by `catch` will ignore
+		errors that are not caught. This is usually dangerous and should be avoided.
 */
 
 #ifndef _EXCEPT_H_
@@ -102,11 +104,6 @@ typedef struct {
 */
 void except_handler(void (*handler)(const Exception *));
 
-// TODO: try_with() could work if we have some mechanism to run the cleanup code
-//			either at the end of the block with the for loop update code
-//			or with in the if(!setjmp(...)) part if setjmp returns !0
-//			so like if(!setjmp(...) || (<expr that does cleanup and returns 0>)) for (...)
-// TODO: record rethrow locations to display?
 // TODO: see DbgHelp.h (windows) and execinfo.h (glibc) for stacktrace
 
 /*
@@ -120,18 +117,19 @@ void except_handler(void (*handler)(const Exception *));
 #endif
 
 #define _except_try(ID) _except_try1(ID)
-#define _except_try1(ID) if (!setjmp(*_except_push())) \
+#define _except_try1(ID) if (!setjmp(*_except_push()) || (_except_pop(), 0)) \
 	for (int _except_##ID=1;_except_##ID--;_except_pop())
 #define _except_catch(NAME) else \
-	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
+	for (const Exception *NAME = _except_get(); NAME; NAME = NULL)
 #define _except_catch_case(NAME, ...) else if (_except_is(__VA_ARGS__, 0)) \
-	for (const Exception *NAME = _except_pop(); NAME; NAME = NULL)
+	for (const Exception *NAME = _except_get(); NAME; NAME = NULL)
 #define _except_wrap(K, X) do { _except_pop(); K X; } while (0)
 _Noreturn void _except_throw(int, const char *, unsigned, const char *, const char *, ...);
 _Noreturn void _except_rethrow(const char *, unsigned, const char *);
 _Noreturn void _except_errno(int, const char *, unsigned, const char *);
 jmp_buf *_except_push(void);
-const Exception *_except_pop(void);
+void _except_pop(void);
 int _except_is(int, ...);
+const Exception *_except_get(void);
 
 #endif // _EXCEPT_H_
